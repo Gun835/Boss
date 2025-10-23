@@ -1,0 +1,178 @@
+--// ⚔️ AutoFarm Sukuna + Akaza + AutoZoom + AutoSkill + M1 + AutoHaki + Hold=0 ⚔️
+--// by กัน
+
+--===[ Settings ]===--
+local QUEST_CFRAME = CFrame.new(537.64801, 8.62301731, -542.656372, -0.766061664, 0, 0.642767608, 0, 1, 0, -0.642767608, 0, -0.766061664)
+local ISLAND = "Throne Isle"
+
+--===[ Services ]===--
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local Remotes = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Serverside")
+local camera = workspace.CurrentCamera
+
+--===[ Global States ]===--
+getgenv().AutoZoom = false
+getgenv().AutoSukuna = false
+getgenv().AutoAkaza = false
+
+--===[ UI Setup ]===--
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "BossFarmUI"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 220, 0, 160)
+frame.Position = UDim2.new(0.8, 0, 0.55, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.BackgroundTransparency = 0.1
+frame.Active = true
+frame.Draggable = true
+
+local function makeButton(name, order)
+	local btn = Instance.new("TextButton", frame)
+	btn.Size = UDim2.new(1, -20, 0, 40)
+	btn.Position = UDim2.new(0, 10, 0, (order - 1) * 45 + 10)
+	btn.Text = name
+	btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 16
+	btn.AutoButtonColor = true
+	btn.BorderSizePixel = 0
+	return btn
+end
+
+local zoomBtn = makeButton("Auto Zoom ❌", 1)
+local sukunaBtn = makeButton("Auto Sukuna ❌", 2)
+local akazaBtn = makeButton("Auto Akaza ❌", 3)
+
+--===[ HoldDuration 0 (Instant Prompt) ]===--
+for _, obj in pairs(workspace:GetDescendants()) do
+	if obj:IsA("ProximityPrompt") then
+		obj.HoldDuration = 0
+	end
+end
+workspace.DescendantAdded:Connect(function(obj)
+	if obj:IsA("ProximityPrompt") then
+		obj.HoldDuration = 0
+	end
+end)
+
+--===[ 🌀 Auto Haki (Every 1 Second) ]===--
+task.spawn(function()
+	while task.wait(1) do
+		pcall(function()
+			Remotes:FireServer("Server", "Misc", "Haki", 1)
+		end)
+	end
+end)
+
+--===[ Helpers ]===--
+local function waitForCharacter()
+	local char, hrp, humanoid
+	repeat
+		char = player.Character or player.CharacterAdded:Wait()
+		hrp = char:FindFirstChild("HumanoidRootPart")
+		humanoid = char:FindFirstChild("Humanoid")
+		task.wait(0.1)
+	until hrp and humanoid and humanoid.Health > 0
+	return char, hrp, humanoid
+end
+
+local function findBoss(name)
+	local bossFolder = workspace.Main.Characters[ISLAND]:FindFirstChild("Boss")
+	if bossFolder then
+		for _,v in pairs(bossFolder:GetChildren()) do
+			if v.Name == name and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+				return v
+			end
+		end
+	end
+	return nil
+end
+
+local function teleportToQuest()
+	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		player.Character.HumanoidRootPart.CFrame = QUEST_CFRAME
+	end
+end
+
+--===[ Attack Function ]===--
+local function attack(target)
+	pcall(function()
+		if target and target:FindFirstChild("HumanoidRootPart") then
+			local char, hrp = waitForCharacter()
+			local hrpTarget = target.HumanoidRootPart
+			task.wait(0.15)
+			hrp.CFrame = hrpTarget.CFrame * CFrame.new(0, 0, 5)
+			-- M1
+			Remotes:FireServer("Server","Sword","M1s","Dual Dagger",1)
+			task.wait(0.15)
+			-- Skill1-4
+			for i = 1, 4 do
+				Remotes:FireServer("Server","Sword","Skill"..i,"Dual Dagger", hrpTarget.Position)
+				task.wait(0.15)
+			end
+		end
+	end)
+end
+
+--===[ Auto Loop ]===--
+task.spawn(function()
+	while task.wait(0.5) do
+		if getgenv().AutoSukuna then
+			local boss = findBoss("Sukuna")
+			if boss then
+				attack(boss)
+			else
+				teleportToQuest()
+			end
+		end
+		if getgenv().AutoAkaza then
+			local boss = findBoss("Akaza")
+			if boss then
+				attack(boss)
+			else
+				teleportToQuest()
+			end
+		end
+	end
+end)
+
+--===[ Auto Zoom ]===--
+RunService.RenderStepped:Connect(function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
+		if getgenv().AutoZoom then
+			camera.CameraType = Enum.CameraType.Scriptable
+			local camPos = char.HumanoidRootPart.Position + Vector3.new(0,50,0)
+			camera.CFrame = CFrame.new(camPos, char.Head.Position)
+		else
+			camera.CameraType = Enum.CameraType.Custom
+			camera.CameraSubject = char:FindFirstChildOfClass("Humanoid")
+		end
+	end
+end)
+
+--===[ Buttons Connect ]===--
+zoomBtn.MouseButton1Click:Connect(function()
+	getgenv().AutoZoom = not getgenv().AutoZoom
+	zoomBtn.Text = "Auto Zoom " .. (getgenv().AutoZoom and "✅" or "❌")
+	zoomBtn.BackgroundColor3 = getgenv().AutoZoom and Color3.fromRGB(0,150,0) or Color3.fromRGB(70,70,70)
+end)
+
+sukunaBtn.MouseButton1Click:Connect(function()
+	getgenv().AutoSukuna = not getgenv().AutoSukuna
+	sukunaBtn.Text = "Auto Sukuna " .. (getgenv().AutoSukuna and "✅" or "❌")
+	sukunaBtn.BackgroundColor3 = getgenv().AutoSukuna and Color3.fromRGB(0,150,0) or Color3.fromRGB(70,70,70)
+end)
+
+akazaBtn.MouseButton1Click:Connect(function()
+	getgenv().AutoAkaza = not getgenv().AutoAkaza
+	akazaBtn.Text = "Auto Akaza " .. (getgenv().AutoAkaza and "✅" or "❌")
+	akazaBtn.BackgroundColor3 = getgenv().AutoAkaza and Color3.fromRGB(0,150,0) or Color3.fromRGB(70,70,70)
+end)
