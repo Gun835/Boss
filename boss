@@ -1,9 +1,11 @@
 --// ⚔️ AutoFarm Sukuna + Akaza + AutoZoom + AutoSkill + M1 + AutoHaki + Hold=0 ⚔️
---// by กัน
+--// by กัน (เวอร์ชันเพิ่มออโต้ถือดาบ)
 
 --===[ Settings ]===--
 local QUEST_CFRAME = CFrame.new(537.64801, 8.62301731, -542.656372, -0.766061664, 0, 0.642767608, 0, 1, 0, -0.642767608, 0, -0.766061664)
 local ISLAND = "Throne Isle"
+local WEAPON = "Dual Dagger" -- 🔪 ชื่ออาวุธของกัน
+local DELAY = 0.3
 
 --===[ Services ]===--
 local Players = game:GetService("Players")
@@ -101,21 +103,39 @@ local function teleportToQuest()
 	end
 end
 
+--===[ Equip Weapon Automatically ]===--
+local function equipWeapon()
+	pcall(function()
+		if not player.Backpack:FindFirstChild(WEAPON) and player.Character:FindFirstChild(WEAPON) then
+			return
+		end
+		local tool = player.Backpack:FindFirstChild(WEAPON)
+		if tool then
+			player.Character.Humanoid:EquipTool(tool)
+		end
+	end)
+end
+
 --===[ Attack Function ]===--
 local function attack(target)
 	pcall(function()
 		if target and target:FindFirstChild("HumanoidRootPart") then
 			local char, hrp = waitForCharacter()
 			local hrpTarget = target.HumanoidRootPart
-			task.wait(0.15)
+
+			equipWeapon() -- ⚔️ ถือดาบอัตโนมัติ
+
+			task.wait(0.1)
 			hrp.CFrame = hrpTarget.CFrame * CFrame.new(0, 0, 5)
+
 			-- M1
-			Remotes:FireServer("Server","Sword","M1s","Dual Dagger",1)
-			task.wait(0.15)
+			Remotes:FireServer("Server","Sword","M1s",WEAPON,1)
+			task.wait(DELAY)
+
 			-- Skill1-4
 			for i = 1, 4 do
-				Remotes:FireServer("Server","Sword","Skill"..i,"Dual Dagger", hrpTarget.Position)
-				task.wait(0.15)
+				Remotes:FireServer("Server","Sword","Skill"..i,WEAPON, hrpTarget.Position)
+				task.wait(DELAY)
 			end
 		end
 	end)
